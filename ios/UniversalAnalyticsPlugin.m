@@ -40,20 +40,22 @@
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
         return;
     }
-    
+
     id<GAITracker> tracker = [[GAI sharedInstance] defaultTracker];
     tracker.allowIDFACollection = [[command argumentAtIndex:0 withDefault:@(NO)] boolValue];
 }
 
 - (void) addCustomDimensionsToTracker: (id<GAITracker>)tracker
 {
-    if (_customDimensions) {
-      for (NSString *key in _customDimensions) {
-        NSString *value = [_customDimensions objectForKey:key];
+    @synchronized(self) {
+      if (_customDimensions) {
+        for (NSString *key in _customDimensions) {
+          NSString *value = [_customDimensions objectForKey:key];
 
-        /* NSLog(@"Setting tracker dimension slot %@: <%@>", key, value); */
-        [tracker set:[GAIFields customDimensionForIndex:[key intValue]]
-        value:value];
+          /* NSLog(@"Setting tracker dimension slot %@: <%@>", key, value); */
+          [tracker set:[GAIFields customDimensionForIndex:[key intValue]]
+          value:value];
+        }
       }
     }
 }
@@ -141,12 +143,12 @@
     NSString* key = [command.arguments objectAtIndex:0];
     NSString* value = [command.arguments objectAtIndex:1];
 
-    if ( ! _customDimensions) {
-      _customDimensions = [[NSMutableDictionary alloc] init];
+    @synchronized(self) {
+      if ( ! _customDimensions) {
+        _customDimensions = [[NSMutableDictionary alloc] init];
+      }
+      _customDimensions[key] = value;
     }
-
-    _customDimensions[key] = value;
-
     pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
     [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
 }
